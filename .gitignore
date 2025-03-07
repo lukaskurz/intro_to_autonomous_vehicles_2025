@@ -1,3 +1,5 @@
 .ipynb_checkpoints/
 .conda/
 datasets/
+
+.DS_Store
