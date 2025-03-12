@@ -1,0 +1,15 @@
+path: datasets/coco
+train: images/train2017
+val: images/val2017
+names:
+  0: person
+  1: bicycle
+  2: car
+  3: motorcycle
+  4: bus
+  5: train
+  6: truck
+  7: cat
+  8: dog
+  9: horse
+  10: cow
