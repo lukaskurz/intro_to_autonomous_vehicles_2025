@@ -1,8 +1,11 @@
 .ipynb_checkpoints/
 .conda/
-datasets/
+.DS_Store/
+.idea/
 
-.DS_Store
+
+
+datasets/
 task1/runs
 wandb-api-key.txt
 runs/
