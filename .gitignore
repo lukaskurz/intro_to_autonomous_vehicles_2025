@@ -5,9 +5,5 @@
 
 
 
-datasets/
-task1/runs
-wandb-api-key.txt
-runs/
-wandb/
-task1/images
+data/
+yolov5/
