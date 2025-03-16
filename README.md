@@ -17,7 +17,7 @@ This project implements an object detection system for autonomous vehicles using
 
 2. Open and run the Jupyter notebook:
    ```bash
-   jupyter notebook object_detection_project.ipynb
+   jupyter notebook object_detection.ipynb
    ```
 
 3. Follow the steps in the notebook to:
