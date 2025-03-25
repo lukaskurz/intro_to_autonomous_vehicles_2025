@@ -11,3 +11,4 @@ wandb-api-key.txt
 runs/
 wandb/
 task1/images
+__pycache__/
