@@ -12,3 +12,5 @@ runs/
 wandb/
 task1/images
 __pycache__/
+Dataset
+SFA3D
