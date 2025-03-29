@@ -1,0 +1,14 @@
+opencv-python
+numpy
+matplotlib
+open3d
+Pillow
+scipy
+sympy
+easydict
+torch
+protobuf==3.20.0
+shapely
+ipykernel
+ipywidgets
+tqdm
