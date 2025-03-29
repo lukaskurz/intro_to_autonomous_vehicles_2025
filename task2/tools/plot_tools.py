@@ -128,7 +128,11 @@ def plot_tracks(img, tracks, measurements, lidar_detections, camera, state=None)
     ax1.set_ylim(0, 50) 
     ax1.set_xlim(-10, 10)
 
-def show_pcl(pcl, boxes=None, ):
+def show_pcl(pcl, boxes=None, use_plotly=False, **kwargs):
+
+    if use_plotly:
+        _show_pcl(pcl, boxes, **kwargs)
+        return
     
     pointcloud = o3d.geometry.PointCloud()
     pointcloud.points = o3d.utility.Vector3dVector(pcl[:,:3])
@@ -167,3 +171,131 @@ def show_pcl(pcl, boxes=None, ):
     vis.destroy_window()
     del opt  # Delete to avoid having  [Open3D ERROR] GLFW Error: The GLFW library is not initialized
     del vis  # Delete to avoid having  [Open3D ERROR] GLFW Error: The GLFW library is not initialized
+
+def _show_pcl(pcl, boxes=None, color_by=2, colorscale='Turbo', camera_pos=None):
+    """
+    Visualize point cloud with proper depth sorting
+    
+    Args:
+        pcl: Numpy array of shape (N, 3+) containing point coordinates (x,y,z)
+        boxes: List of tuples, each containing (center, rotation_matrix, size) for each box
+        color_by: Column index to use for coloring points (default: 2, which is z-coordinate)
+        colorscale: Plotly colorscale to use
+        camera_pos: Camera position for depth sorting (default: [0,0,0])
+    """
+    import plotly.graph_objects as go
+    import IPython.display as display
+    
+    
+    # Default camera position if not specified
+    if camera_pos is None:
+        camera_pos = np.array([0, 0, 0])
+    
+    # Calculate distance from camera to each point (for depth sorting)
+    camera_distances = np.sqrt(
+        (pcl[:, 0] - camera_pos[0])**2 +
+        (pcl[:, 1] - camera_pos[1])**2 +
+        (pcl[:, 2] - camera_pos[2])**2
+    )
+    
+    # Sort points by distance (furthest first for proper occlusion)
+    sort_indices = np.argsort(-camera_distances)
+    sorted_pcl = pcl[sort_indices]
+    
+    # Create figure
+    fig = go.Figure()
+    
+    # Add the depth-sorted point cloud with coloring
+    fig.add_trace(go.Scatter3d(
+        x=sorted_pcl[:, 0],
+        y=sorted_pcl[:, 1],
+        z=sorted_pcl[:, 2],
+        mode='markers',
+        marker=dict(
+            size=2,
+            color=sorted_pcl[:, color_by],
+            colorscale=colorscale,
+            opacity=0.8
+        ),
+        name='Point Cloud'
+    ))
+    
+    
+    # Add bounding boxes if provided
+    if boxes is not None:
+        for i, box in enumerate(boxes):
+            bbox_center = box[0]
+            bbox_rot = box[1]
+            bbox_size = box[2]
+            
+            # Validate box parameters
+            if bbox_center.shape != (3,):
+                print(f"Error: Box center should be of shape (3,), got {bbox_center.shape}")
+                continue
+            if bbox_rot.shape != (3, 3):
+                print(f"Error: Box rotation should be a Rotation matrix of shape (3,3), got {bbox_rot.shape}")
+                continue
+            if bbox_size.shape != (3,):
+                print(f"Error: Box size should be of shape (3,), got {bbox_size.shape}")
+                continue
+                
+            # Create the 8 corners of the bounding box in local coordinates
+            local_vertices = np.array([
+                [bbox_size[0]/2, bbox_size[1]/2, bbox_size[2]/2],
+                [bbox_size[0]/2, bbox_size[1]/2, -bbox_size[2]/2],
+                [bbox_size[0]/2, -bbox_size[1]/2, bbox_size[2]/2],
+                [bbox_size[0]/2, -bbox_size[1]/2, -bbox_size[2]/2],
+                [-bbox_size[0]/2, bbox_size[1]/2, bbox_size[2]/2],
+                [-bbox_size[0]/2, bbox_size[1]/2, -bbox_size[2]/2],
+                [-bbox_size[0]/2, -bbox_size[1]/2, bbox_size[2]/2],
+                [-bbox_size[0]/2, -bbox_size[1]/2, -bbox_size[2]/2]
+            ])
+            
+            # Transform to global coordinates using rotation matrix and center
+            global_vertices = np.array([bbox_rot @ vertex + bbox_center for vertex in local_vertices])
+            
+            # Define the 12 edges of the box by connecting vertices
+            edge_indices = [
+                # Bottom face
+                [0, 1], [1, 3], [3, 2], [2, 0],
+                # Top face
+                [4, 5], [5, 7], [7, 6], [6, 4],
+                # Connecting edges
+                [0, 4], [1, 5], [2, 6], [3, 7]
+            ]
+            
+            # Create a trace for each edge of the box
+            for edge in edge_indices:
+                x_vals = [global_vertices[edge[0], 0], global_vertices[edge[1], 0], None]
+                y_vals = [global_vertices[edge[0], 1], global_vertices[edge[1], 1], None]
+                z_vals = [global_vertices[edge[0], 2], global_vertices[edge[1], 2], None]
+                
+                fig.add_trace(go.Scatter3d(
+                    x=x_vals, 
+                    y=y_vals, 
+                    z=z_vals,
+                    mode='lines',
+                    line=dict(color='red', width=4),
+                    name=f'Box {i}',
+                    showlegend=False
+                ))
+    
+    # Layout settings
+    fig.update_layout(
+        scene=dict(
+            xaxis=dict(showbackground=False),
+            yaxis=dict(showbackground=False),
+            zaxis=dict(showbackground=False),
+            aspectmode='data',
+            bgcolor='black',
+        ),
+        width=800,
+        height=800,
+        margin=dict(l=0, r=0, b=0, t=0),
+        paper_bgcolor='black',
+        legend=dict(font=dict(color='white'))
+    )
+    
+    # Display the figure
+    display.clear_output(wait=True)
+    display.display(fig)
