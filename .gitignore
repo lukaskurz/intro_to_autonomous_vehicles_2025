@@ -2,16 +2,15 @@
 .conda/
 .DS_Store/
 .idea/
-
-
+.venv/
+__pycache__/
 
 datasets/
 task1/runs
-task2/dataset
+task2/dataset/*
 wandb-api-key.txt
 runs/
 wandb/
 task1/images
-__pycache__/
 Dataset
 SFA3D
