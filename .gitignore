@@ -7,6 +7,7 @@
 
 datasets/
 task1/runs
+task2/dataset
 wandb-api-key.txt
 runs/
 wandb/
