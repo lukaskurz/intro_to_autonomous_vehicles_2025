@@ -14,3 +14,5 @@ wandb/
 task1/images
 Dataset
 SFA3D
+/task2/resized_frames
+/task2/tracking_frames
