@@ -12,3 +12,4 @@ imageio
 ipywidgets
 protobuf
 seaborn
+imageio[ffmpeg]
