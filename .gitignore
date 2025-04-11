@@ -1,6 +1,6 @@
 .ipynb_checkpoints/
 .conda/
-.DS_Store/
+**/.DS_Store/
 .idea/
 .venv/
 __pycache__/
