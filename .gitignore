@@ -17,4 +17,5 @@ SFA3D
 /task2/resized_frames
 /task2/tracking_frames
 /task2/tracking_frames_old
-
+/task3/dataset
+/task3/examples/dataset
