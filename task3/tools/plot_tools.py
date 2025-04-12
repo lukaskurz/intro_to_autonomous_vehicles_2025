@@ -367,3 +367,87 @@ def view_frames(frames):
     
     # Show initial frame
     view_frame(0)
+
+
+def plot_map_and_trajectories(map_pcd, gt_positions, estimated_positions, save_path=None):
+    """
+    Plot the map point cloud, ground truth positions, and estimated positions in 2D.
+    
+    Args:
+        map_pcd: The map point cloud (numpy array of shape Nx3)
+        gt_positions: Ground truth positions (numpy array of shape Mx3)
+        estimated_positions: Estimated positions (numpy array of shape Mx3)
+        save_path: Optional path to save the figure
+    """
+    import matplotlib.pyplot as plt
+    import numpy as np
+    
+    # Create figure with adequate size
+    plt.figure(figsize=(14, 10))
+    
+    # Plot map points (with low alpha to not overwhelm the plot)
+    # Only use a subset of points to make the plot more efficient
+    if len(map_pcd) > 10000:
+        # Randomly sample points to reduce density
+        indices = np.random.choice(len(map_pcd), 10000, replace=False)
+        map_subset = map_pcd[indices]
+    else:
+        map_subset = map_pcd
+    
+    # Plot the map as a scatter plot (top-down view, so X and Y coordinates)
+    plt.scatter(map_subset[:, 0], map_subset[:, 1], c='lightgray', s=1, alpha=0.3, label='Map')
+    
+    # Plot ground truth trajectory
+    plt.plot(gt_positions[:, 0], gt_positions[:, 1], 'g-', linewidth=4, label='Ground Truth')
+    plt.scatter(gt_positions[:, 0], gt_positions[:, 1], c='green', s=40, alpha=0.6)
+    
+    # Plot estimated trajectory
+    plt.plot(estimated_positions[:, 0], estimated_positions[:, 1], 'r-', linewidth=1, label='Estimated')
+    plt.scatter(estimated_positions[:, 0], estimated_positions[:, 1], c='r', s=10, alpha=0.6)
+    
+    # Highlight start and end points
+    plt.scatter(gt_positions[0, 0], gt_positions[0, 1], c='darkgreen', s=100, marker='^', label='Start')
+    plt.scatter(gt_positions[-1, 0], gt_positions[-1, 1], c='darkred', s=100, marker='s', label='End')
+    
+    # Draw lines connecting ground truth and estimated positions to visualize errors
+    for i in range(len(gt_positions)):
+        plt.plot([gt_positions[i, 0], estimated_positions[i, 0]], 
+                 [gt_positions[i, 1], estimated_positions[i, 1]], 
+                 'r-', alpha=0.2, linewidth=0.5)
+    
+    # Calculate the range of the map to set proper aspect ratio
+    x_min, x_max = np.min(map_subset[:, 0]), np.max(map_subset[:, 0])
+    y_min, y_max = np.min(map_subset[:, 1]), np.max(map_subset[:, 1])
+    
+    # Add some padding around the map
+    padding = 5  # meters
+    plt.xlim(x_min - padding, x_max + padding)
+    plt.ylim(y_min - padding, y_max + padding)
+    
+    # Set equal aspect ratio
+    plt.gca().set_aspect('equal')
+    
+    # Add title, labels, legend
+    plt.title('Map and Vehicle Trajectory', fontsize=16)
+    plt.xlabel('X (meters)', fontsize=12)
+    plt.ylabel('Y (meters)', fontsize=12)
+    plt.grid(True, alpha=0.3)
+    plt.legend(fontsize=10)
+    
+    # Calculate and display statistics
+    errors = np.linalg.norm(gt_positions - estimated_positions, axis=1)
+    mean_error = np.mean(errors)
+    max_error = np.max(errors)
+    
+    plt.figtext(0.02, 0.02, f'Mean Error: {mean_error:.2f}m, Max Error: {max_error:.2f}m', 
+                fontsize=12, bbox=dict(facecolor='white', alpha=0.8))
+    
+    # Adjust layout
+    plt.tight_layout()
+    
+    # Save if requested
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    
+    # Show the plot
+    plt.show()
