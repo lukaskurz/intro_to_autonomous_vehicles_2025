@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 from matplotlib.path import Path
 import matplotlib.patches as patches
 import open3d as o3d
+import ipywidgets as widgets
+from IPython.display import display, clear_output
 
 from . import image_tools
 
@@ -312,3 +314,56 @@ def plot_pcd(ax: plt.Axes, points: np.ndarray, **kwargs):
         raise ValueError("The 'points' array must have at least two dimensions [n_points, at least 2].")
 
     return ax.scatter(points[:, 0], points[:, 1], **kwargs)
+
+def view_frames(frames):
+    # Create output widget to manage display
+    output = widgets.Output()
+    
+    # Current frame index
+    current_idx = widgets.IntSlider(
+        value=0,
+        min=0,
+        max=len(frames)-1,
+        step=1,
+        description='Frame:',
+        continuous_update=False
+    )
+    
+    def view_frame(idx):
+        with output:
+            clear_output(wait=True)
+            fig, ax = plt.subplots()
+            plot_pcd(ax, frames[idx], s=0.1)
+            plt.title(f'Frame {idx}')
+            plt.show()
+    
+    # Button handlers
+    def on_prev_button_clicked(b):
+        current_idx.value = max(0, current_idx.value - 1)
+    
+    def on_next_button_clicked(b):
+        current_idx.value = min(len(frames) - 1, current_idx.value + 1)
+    
+    # Create buttons
+    prev_button = widgets.Button(description='← Previous')
+    next_button = widgets.Button(description='Next →')
+    
+    # Attach button click handlers
+    prev_button.on_click(on_prev_button_clicked)
+    next_button.on_click(on_next_button_clicked)
+    
+    # Layout for buttons
+    buttons = widgets.HBox([prev_button, next_button])
+    
+    # Create the interactive widget
+    widgets.interactive(view_frame, idx=current_idx)
+    
+    # Display everything
+    display(widgets.VBox([
+        current_idx,
+        buttons,
+        output
+    ]))
+    
+    # Show initial frame
+    view_frame(0)

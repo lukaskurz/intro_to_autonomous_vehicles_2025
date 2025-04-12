@@ -168,8 +168,8 @@ def animate_icp_results(P: np.ndarray,
     x_target, y_target, _ = Q
 
     # Prepare initial scatter plots
-    scatter_source = ax.scatter(x_source, y_source, color='blue', label='Source Points')
-    scatter_target = ax.scatter(x_target, y_target, color='orangered', label='Target Points')
+    scatter_source = ax.scatter(x_source, y_source, color='blue', label='Source Points', s=0.1)
+    scatter_target = ax.scatter(x_target, y_target, color='orangered', label='Target Points', s=0.1)
     ax.legend()
 
     # Lines for correspondence visualization
