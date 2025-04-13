@@ -1,10 +1,11 @@
 import os
+import numpy as np
 import pandas as pd
 from tools.pcd_tools import pcd_from_path
 
 
 class FrameDataset():
-    def __init__(self, frames_dir: str, ground_truth_path: str):
+    def __init__(self, frames_dir: str, ground_truth_path: str, zero_z: bool = False):
         """
         Initialize the FrameDataset object.
 
@@ -16,7 +17,7 @@ class FrameDataset():
         self.ground_truth_path = ground_truth_path
         self.frames = self._load_frames()
         self.ground_truth = self._load_ground_truth()
-
+        self.zero_z = zero_z
     def _load_frames(self):
         frames = []
         for file in os.listdir(self.frames_dir):
@@ -52,5 +53,12 @@ class FrameDataset():
         ground_truth = self.ground_truth.iloc[idx]
         gt_pos = ground_truth[['x', 'y', 'z']].to_numpy()
         gt_orientation = ground_truth[['roll', 'pitch', 'yaw']].to_numpy()
+
+        if self.zero_z:
+            pcd = np.c_[pcd[:, 0], pcd[:, 1], np.zeros(pcd.shape[0])]
+            gt_pos = np.array([gt_pos[0], gt_pos[1], 0.0])
+            gt_orientation = np.array([0.0, 0.0, gt_orientation[2]])
+            
+
 
         return pcd, gt_pos, gt_orientation

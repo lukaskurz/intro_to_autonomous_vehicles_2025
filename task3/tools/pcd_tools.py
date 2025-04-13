@@ -61,3 +61,42 @@ def downsample_voxel(point_cloud: np.ndarray, voxel_size: float) -> Tuple[np.nda
     indices += min_bound + voxel_size / 2
 
     return indices, voxel_config
+
+def boundaries(map_array: np.ndarray, r: float = 2.5, n_iter: int = 2000, zlims: Tuple[float, float] = (-1, 7), device_str: str = "CPU:0") -> np.ndarray:
+    """
+    Detects boundaries in a voxelized point cloud and trims the results within specified z-limits.
+
+    Args:
+    - map_array (np.ndarray): Voxelized point cloud, shape (Nr_points, 3).
+    - r (float): Radius to consider points as part of the same object.
+    - n_iter (int): Number of iterations for edge detection.
+    - zlims (Tuple[float, float]): Minimum and maximum z-values to consider.
+    - device_str (str): Device identifier for computation.
+
+    Returns:
+    - np.ndarray: Point cloud containing detected boundaries, shape (Nr_points_downsampled, 3).
+    """
+    # Set up the computation device and data type
+    device = o3d.core.Device(device_str)
+    dtype = o3d.core.Dtype.Float32
+
+    # Initialize an empty point cloud on the specified device
+    tensor_map = o3d.t.geometry.PointCloud(device)
+
+    # Assign data to point cloud
+    tensor_map.point['positions'] = o3d.core.Tensor(map_array, dtype, device)
+
+    # Estimate normals for the point cloud
+    tensor_map.estimate_normals()
+
+    # Calculate the boundaries of the point cloud using the provided radius and iterations
+    boundaries, _ = tensor_map.compute_boundary_points(r, n_iter)
+
+    # Extract the boundary points as a NumPy array
+    np_boundaries = boundaries.point['positions'].numpy()
+
+    # Apply z-limits to filter the point cloud
+    z_filter = (np_boundaries[:, 2] > zlims[0]) & (np_boundaries[:, 2] < zlims[1])
+    np_boundaries = np_boundaries[z_filter]
+
+    return np_boundaries
