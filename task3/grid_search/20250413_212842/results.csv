@@ -1,0 +1,2 @@
+run_id,voxel_size_scan,voxel_size_map,ndt_cell_size,ndt_iterations,r_scan,r_map,zlim_min,zlim_max,frame_range,zlims,ylim,xlim,max_lateral_error,mean_lateral_error,max_yaw_error,mean_yaw_error,mean_computation_time
+1,0.2,0.3,1.0,5,1.0,2.0,-2.0,5.0,"[550, 650]","[-2.0, 5.0]",,,1.3221339525809899,0.5517566589654901,0.005321738650904084,0.00024213407700206748,1.4351858794689178

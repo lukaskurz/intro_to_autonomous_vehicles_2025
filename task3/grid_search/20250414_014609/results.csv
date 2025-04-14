@@ -1,0 +1,3 @@
+run_id,voxel_size_scan,voxel_size_map,ndt_cell_size,ndt_iterations,r_scan,r_map,zlim_min,zlim_max,zero_z,frame_range,zlims,ylim,xlim,max_lateral_error,mean_lateral_error,max_yaw_error,mean_yaw_error,mean_computation_time
+1,0.25,0.5,4,10,1.5,3.0,-1,7,0,"[550, 650]","[-1, 7]",,,1.0963689111044346,0.5100721098006376,-0.0006420054835839448,-0.009873393463902962,2.0172751927375794
+4,0.25,0.5,4,10,1.5,3.0,-1,7,3,"[550, 650]","[-1, 7]",,,1.3834412241548801,0.6411939851255583,0.005623922078023027,0.00018576176100471963,1.9621239586880332
