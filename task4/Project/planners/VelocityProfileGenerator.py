@@ -170,8 +170,11 @@ class VelocityProfileGenerator(object):
             # check calculate the distance between two points in the spiral
             # eg. temp_dist += path_point_distance(spiral[i], spiral[i-1])
             
-            for i in range(stop_index,0,-1):
-                stop_index = i # change this loop to work properly
+            for i in range(stop_index, 0, -1):
+                temp_dist += path_point_distance(spiral[i], spiral[i-1])
+                if temp_dist >= brake_distance:
+                    brake_index = i
+                    break
                 
             # Compute the index to stop decelerating to the slow speed.
             decel_index = 0
@@ -187,7 +190,10 @@ class VelocityProfileGenerator(object):
             # eg. temp_dist += path_point_distance(spiral[i], spiral[i+1])
 
             for i in range(brake_index):
-                decel_index = i # change this loop to work properly
+                temp_dist += path_point_distance(spiral[i], spiral[i+1])
+                if temp_dist >= decel_distance:
+                    decel_index = i
+                    break
 
 
             # At this point we have all the speeds. Now we need to create the
@@ -201,13 +207,13 @@ class VelocityProfileGenerator(object):
             for i in range(decel_index):
                 # TODO calculate the distance between points in the spiral
                 # Use path_point_distance() function
-                dist = 0
+                dist = path_point_distance(spiral[i], spiral[i+1])
 
                 # TODO calculate the final velocity at the calculated distance,
                 # taking into account a decceleration of -self._a_max, and an
                 # initial velocity vi.
                 # Hint: use the self.calc_final_speed() that you completed. 
-                vf = 0
+                vf = self.calc_final_speed(vi, -self._a_max, dist)
 
                 # Cap the final velocity
                 vf = max(vf, self._slow_speed)
@@ -243,13 +249,13 @@ class VelocityProfileGenerator(object):
             for i in range(brake_index, stop_index):
                 # TODO calculate the distance between points in the spiral
                 # Use path_point_distance() function
-                dist = 0
+                dist = path_point_distance(spiral[i], spiral[i+1])
 
                 # TODO calculate the final velocity at the calculated distance,
                 # taking into account a decceleration of -self._a_max, and an
                 # initial velocity vi.
                 # Hint: use the self.calc_final_speed() that you completed. 
-                vf = 0
+                vf = self.calc_final_speed(vi, -self._a_max, dist)
 
                 path_point = spiral[i]
                 v = vi
@@ -307,7 +313,10 @@ class VelocityProfileGenerator(object):
         # eg. distance += path_point_distance(spiral[i], spiral[i+1])
 
         for i in range(len(spiral)-1):
-            ramp_end_index = i # change this loop to work properly
+            distance += path_point_distance(spiral[i], spiral[i+1])
+            if distance >= accel_distance:
+                ramp_end_index = i
+                break
         
         time_step = 0
         time = 0
@@ -316,7 +325,7 @@ class VelocityProfileGenerator(object):
         for i in range(ramp_end_index):
             # TODO calculate the distance between points in the spiral
             # Use path_point_distance() function
-            dist = 0 # Calculate this
+            dist = path_point_distance(spiral[i], spiral[i+1]) # Calculate this
             vf = 0
 
             if desired_speed < start_speed:
@@ -325,7 +334,7 @@ class VelocityProfileGenerator(object):
                 # initial velocity vi.
                 # Hint: use the self.calc_final_speed() that you completed, also check which one should you
                 # use, self._a_max or -self._a_max. 
-                vf = 0
+                vf = self.calc_final_speed(vi, -self._a_max, dist)
                 vf = max(desired_speed, vf)
             
             else:
@@ -334,7 +343,7 @@ class VelocityProfileGenerator(object):
                 # initial velocity vi.
                 # Hint: use the self.calc_final_speed() that you completed, also check which one should you
                 # use, self._a_max or -self._a_max. 
-                vf = 0
+                vf = self.calc_final_speed(vi, self._a_max, dist)
                 vf = min(desired_speed, vf)
             
             path_point = spiral[i]
@@ -356,7 +365,7 @@ class VelocityProfileGenerator(object):
 
             # TODO calculate the distance between points in the spiral
             # Use path_point_distance() function
-            dist = 0
+            dist = path_point_distance(spiral[i], spiral[i+1])
 
             # This should never happen in a "nominal_trajectory", but it's a sanity
             # check
@@ -392,7 +401,7 @@ class VelocityProfileGenerator(object):
             # acceleration/deceleration "a". HINT look at the description of this
             # function. Make sure you handle div by 0
             
-            d = 0 # calculate this
+            d = (v_f**2 - v_i**2) / (2 * a) # calculate this
         
         return d
     
@@ -410,7 +419,7 @@ class VelocityProfileGenerator(object):
         #and make v_f = 0 in that case. If the discriminant is inf or nan return
         #infinity
 
-        v_f_squared = 0 # Calculate this
+        v_f_squared = v_i**2 + 2 * a * d # Calculate this
 
         if v_f_squared <= 0:
             v_f = 0
