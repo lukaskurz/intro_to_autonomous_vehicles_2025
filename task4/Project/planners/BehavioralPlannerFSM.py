@@ -108,7 +108,7 @@ class BehavioralPlannerFSM(object):
         # TODO-Lookahead: One way to find a reasonable lookahead distance is to find
         # the distance you will need to come to a stop while traveling at speed V and
         # using a comfortable deceleration.
-        look_ahead_distance = -1 #<- calculate value
+        look_ahead_distance = (velocity_mag/accel_mag) * t #<- calculate value
 
         # Cap look_ahead_distance in range [_lookahead_distance_min, _lookahead_distance_max] 
         look_ahead_distance = min(max(look_ahead_distance,self._lookahead_distance_min),self._lookahead_distance_max)
@@ -136,29 +136,29 @@ class BehavioralPlannerFSM(object):
                 # use cosine and sine to get x and y
                 #
                 ang = goal.rotation.yaw + np.pi
-                goal.location.x += 1.0 #<- calculate appropiate coordinate
-                goal.location.y += 1.0 #<- calculate appropiate coordinate
+                goal.location.x += np.cos(ang) #<- calculate appropiate coordinate
+                goal.location.y += np.sin(ang) #<- calculate appropiate coordinate
 
 
                 # TODO-goal speed at stopping point: What should be the goal speed??
-                goal.velocity.x = 1.0  # <- caluclate value
-                goal.velocity.y = 1.0  # <- caluclate value
-                goal.velocity.z = 1.0  # <- caluclate value
+                goal.velocity.x = 0.0  # <- caluclate value
+                goal.velocity.y = 0.0  # <- caluclate value
+                goal.velocity.z = 0.0  # <- caluclate value
 
             else:
                 # TODO-goal speed in nominal state: What should be the goal speed now
                 # that we know we are in nominal state and we can continue freely?
                 # Remember that the speed is a vector
                 # HINT: self._speed_limit * np.sin/cos (goal.rotation.yaw);
-                goal.velocity.x = 1.0  # <- caluclate value
-                goal.velocity.y = 1.0  # <- caluclate value
-                goal.velocity.z = 1.0 # <-  caluclate value
+                goal.velocity.x = self._speed_limit * np.cos(goal.rotation.yaw)  # <- caluclate value
+                goal.velocity.y = self._speed_limit * np.sin(goal.rotation.yaw)  # <- caluclate value
+                goal.velocity.z = 0.0 # <-  caluclate value
 
         elif (self._active_maneuver == Maneuver.DECEL_TO_STOP):
             # TODO-maintain the same goal when in DECEL_TO_STOP state: Make sure the
             # new goal is the same as the previous goal (self._goal). That way we
             # keep/maintain the goal at the stop line.
-            goal = None # <- change value
+            goal = self._goal # <- change value
 
             # TODO: It turns out that when we teleport, the car is always at speed
             # zero. In this the case, as soon as we enter the DECEL_TO_STOP state,
@@ -169,15 +169,15 @@ class BehavioralPlannerFSM(object):
             # params.P_STOP_THRESHOLD_DISTANCE. Uncomment the line used to calculate the
             # distance
             
-            #distance_to_stop_sign = goal.location.distance(ego_state.location)
+            distance_to_stop_sign = goal.location.distance(ego_state.location)
 
             # TODO-use distance rather than speed: Use distance rather than speed...
-            if utils.get_magnitude(ego_state.velocity) < self._stop_threshold_speed:
+            if distance_to_stop_sign <= params.P_STOP_THRESHOLD_DISTANCE:
                 # if (distance_to_stop_sign <= params.P_STOP_THRESHOLD_DISTANCE):
                 # TODO-move to STOPPED state: Now that we know we are close or at the
                 # stopping point we should change state to "STOPPED"
 
-                self._active_maneuver = None # <- change this  
+                self._active_maneuver = Maneuver.STOPPED # <- change this  
 
                 self._start_stop_time = time.time()
         
@@ -186,7 +186,7 @@ class BehavioralPlannerFSM(object):
             # is the same as the previous goal. That way we keep/maintain the goal at
             # the stop line. goal = ...;
 
-            goal = None  # Keep previous goal. Stay where you are. # <- Fix This
+            goal = self._goal  # Keep previous goal. Stay where you are. # <- Fix This
 
             stopped_secs = (time.time() - self._start_stop_time)
 
@@ -194,7 +194,7 @@ class BehavioralPlannerFSM(object):
                 # TODO-move to FOLLOW_LANE state: What state do we want to move to, when
                 # we are "done" at the STOPPED state?
                 
-                self._active_maneuver = None # <- Change this
+                self._active_maneuver = Maneuver.FOLLOW_LANE # <- Change this
 
         self._goal = goal
         return goal

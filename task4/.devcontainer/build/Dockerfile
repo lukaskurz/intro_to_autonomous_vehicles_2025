@@ -70,7 +70,7 @@ RUN apt update -y && \
 
 RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.7 1
 
-RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && \
+RUN curl https://bootstrap.pypa.io/pip/3.7/get-pip.py -o get-pip.py && \
     python3.7 get-pip.py && \
     rm get-pip.py
 
@@ -91,4 +91,4 @@ RUN groupadd --gid ${USER_GID} ${USERNAME} \
 USER ${USERNAME}
 RUN mkdir -p /home/docker/app
 WORKDIR /home/docker/app
-ENV PYTHONPATH "$PYTHONPATH:/app/Project/PythonAPI/carla/dist/carla-0.9.10-py3.7-linux-x86_64.egg"
+ENV PYTHONPATH "$PYTHONPATH:/app/Project/PythonAPI/carla/dist/carla-0.9.10-py3.7-linux-x86_64.egg:/app/Project"
