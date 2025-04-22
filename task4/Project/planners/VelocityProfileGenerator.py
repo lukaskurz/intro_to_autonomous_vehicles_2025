@@ -72,7 +72,7 @@ class VelocityProfileGenerator(object):
 
         # Generate a trapezoidal trajectory to decelerate to stop.
         if maneuver == Maneuver.DECEL_TO_STOP:
-            trajectory = self.decelerate_trajectory(spiral, start_speed) 
+            trajectory = self.decelerate_trajectory(spiral, start_speed)
         
         # If we need to follow the lead vehicle, make sure we decelerate to its speed
         # by the time we reach the time gap point.
@@ -173,7 +173,7 @@ class VelocityProfileGenerator(object):
             for i in range(stop_index, 0, -1):
                 temp_dist += path_point_distance(spiral[i], spiral[i-1])
                 if temp_dist >= brake_distance:
-                    brake_index = i
+                    brake_index = i-1 # NOTE: maybe to late braking
                     break
                 
             # Compute the index to stop decelerating to the slow speed.
@@ -203,7 +203,6 @@ class VelocityProfileGenerator(object):
             vi = start_speed
 
             # Calculation of the deceleration trajectory
-
             for i in range(decel_index):
                 # TODO calculate the distance between points in the spiral
                 # Use path_point_distance() function
@@ -244,8 +243,10 @@ class VelocityProfileGenerator(object):
                 else:
                     time_step = 0
                 time += time_step
+            
 
             # Calculation of deceleration trajectory until stopped
+            # NOTE: we brake 1 step to late
             for i in range(brake_index, stop_index):
                 # TODO calculate the distance between points in the spiral
                 # Use path_point_distance() function
@@ -255,7 +256,7 @@ class VelocityProfileGenerator(object):
                 # taking into account a decceleration of -self._a_max, and an
                 # initial velocity vi.
                 # Hint: use the self.calc_final_speed() that you completed. 
-                vf = self.calc_final_speed(vi, -self._a_max, dist)
+                vf = self.calc_final_speed(vi, -self._a_max, dist)                
 
                 path_point = spiral[i]
                 v = vi
@@ -419,7 +420,7 @@ class VelocityProfileGenerator(object):
         #and make v_f = 0 in that case. If the discriminant is inf or nan return
         #infinity
 
-        v_f_squared = v_i**2 + 2 * a * d # Calculate this
+        v_f_squared = (v_i**2) + (2 * a * d) # Calculate this
 
         if v_f_squared <= 0:
             v_f = 0
