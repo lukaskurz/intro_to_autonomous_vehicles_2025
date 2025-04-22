@@ -86,8 +86,8 @@ def collision_circles_cost_spiral(spiral : List[PathPoint], obstacles : List[Sta
             # is NOT complete. HINT: use CIRCLE_OFFSETS[c], sine and cosine to
             # calculate x and y: cur_y + CIRCLE_OFFSETS[c] * std::sin/cos(cur_yaw)
             
-            circle_center_x = 0 # <- Calculate this 
-            circle_center_y = 0 # <- Calculate this 
+            circle_center_x = cur_x + params.CIRCLE_OFFSETS[c] * np.cos(cur_yaw) # <- Calculate this 
+            circle_center_y = cur_y + params.CIRCLE_OFFSETS[c] * np.sin(cur_yaw) # <- Calculate this 
 
             for obstacle in obstacles:
                 actor_yaw = obstacle.rotation.yaw
@@ -102,14 +102,14 @@ def collision_circles_cost_spiral(spiral : List[PathPoint], obstacles : List[Sta
                     # the distance between the center of each circle and the
                     # obstacle/actor
 
-                    dist = 0 # Calculate this
+                    dist = np.sqrt((circle_center_x - actor_center_x)**2 + (circle_center_y - actor_center_y)**2) # Calculate this
 
                     # TODO-Collision checking: Remember that you can get the circle radius
                     # of the car with params.CIRCLE_RADII[c] and the current circle of radius 
                     # of the the obstacle with params.CIRCLE_RADII[c2]. Remember,
                     # which is the condition for it to be a collision.
             
-                    collision = False # Calculate this   
+                    collision = (dist <= params.CIRCLE_RADII[c] + params.CIRCLE_RADII[c2]) # Calculate this   
 
     result = 0
     
@@ -130,11 +130,11 @@ def close_to_main_goal_cost_spiral(spiral : List[PathPoint], main_goal : State):
     # 1].y and spiral[n - 1].z.
     # Use main_goal.location.x, main_goal.location.y and main_goal.location.z
     # Ex: main_goal.location.x - spiral[n - 1].x
-    delta_x = 0 # Calculate this 
-    delta_y = 0 # Calculate this 
+    delta_x = main_goal.location.x - spiral[n-1].x # Calculate this 
+    delta_y = main_goal.location.y - spiral[n-1].y # Calculate this 
     delta_z = 0 # Calculate this 
 
-    dist = 0 # Use the deltas to calculate the distance
+    dist = np.sqrt(delta_x ** 2 + delta_y ** 2) # Use the deltas to calculate the distance
 
     cost = 2.0/ (1+np.exp(-dist)) - 1
     return cost
