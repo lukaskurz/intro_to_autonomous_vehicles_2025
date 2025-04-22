@@ -113,7 +113,7 @@ class MotionPlanner(object):
 
         # TODO-Perpendicular direction: ADD pi/2 to the goal yaw
         # (goal_state.rotation.yaw)
-        yaw = 0 # Calclate this 
+        yaw = goal_state.rotation.yaw + np.pi / 2 # Calclate this 
 
         for i in range(self._num_paths):
             goal_offset = goal_state.copy()
@@ -125,8 +125,8 @@ class MotionPlanner(object):
             # calculated this direction above (yaw_plus_90). HINT: use
             # np.cos(yaw_plus_90) and np.sin(yaw_plus_90)
 
-            goal_offset.location.x += 0 # calculates this
-            goal_offset.location.y += 0 # calculates this
+            goal_offset.location.x += offset * np.cos(yaw) # calculates this
+            goal_offset.location.y += offset * np.sin(yaw) # calculates this
             
             if self.valid_goal(goal_state, goal_offset):
                 goals_offset.append(goal_offset)
