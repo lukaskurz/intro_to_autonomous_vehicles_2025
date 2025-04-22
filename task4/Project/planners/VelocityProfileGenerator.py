@@ -295,6 +295,7 @@ class VelocityProfileGenerator(object):
         """
         trajectory = []
         accel_distance = 0
+        print(f"start_speed: {start_speed}, desired_speed: {desired_speed}")
 
         if desired_speed < start_speed:
             accel_distance = self.calc_distance(start_speed, desired_speed, -self._a_max)
@@ -313,10 +314,12 @@ class VelocityProfileGenerator(object):
         # check calculate the distance between two points in the spiral
         # eg. distance += path_point_distance(spiral[i], spiral[i+1])
 
+        print(f"accel_distance: {accel_distance}")
         for i in range(len(spiral)-1):
             distance += path_point_distance(spiral[i], spiral[i+1])
+            print(f"i: {i}, distance: {distance}")
             if distance >= accel_distance:
-                ramp_end_index = i
+                ramp_end_index = i+1
                 break
         
         time_step = 0
@@ -361,6 +364,7 @@ class VelocityProfileGenerator(object):
             path_point = spiral[i]
             v = desired_speed
             relative_time = time
+            print(f"i: {i}, v: {v}, time: {time}")
             traj_point = TrajectoryPoint(path_point, v, 0, relative_time)
             trajectory.append(traj_point)
 
