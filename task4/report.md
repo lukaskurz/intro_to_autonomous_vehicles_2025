@@ -3,10 +3,10 @@
 ## Contribution Breakdown
 
 Team Members:
-- Lukas Kurz (K12007739) - 
-- Shamekh Al-Suwi (K12146739)
-- Tobias Washüttl (K11916576)
-- Daniel Buchberger (K0885317)
+- Lukas Kurz (K12007739) - Setup, Path and Trajectory Planning
+- Shamekh Al-Suwi (K12146739) - Report, Analysis
+- Tobias Washüttl (K11916576) - Setup, Behavioural PLanning
+- Daniel Buchberger (K0885317) - Path and Trajectory Planning
 
 _Note: We made use of AI assistance/LLMs for parts of the code to organize, clean up and help with documenting it for easier readability, as is standard practice nowadays. This does not in any way mean that code was plagiarized or copied, unless explicitly stated. All work was done in best conscience by the contributors named above._
 
