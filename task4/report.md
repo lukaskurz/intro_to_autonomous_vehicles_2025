@@ -3,10 +3,10 @@
 ## Contribution Breakdown
 
 Team Members:
-- Lukas Kurz (K12007739)
-- Shamekh Al-Suwi (K12146739)
-- Tobias Washüttl (K11916576)
-- Daniel Buchberger (K0885317)
+- Lukas Kurz (K12007739) - Setup, Path and Trajectory Planning
+- Shamekh Al-Suwi (K12146739) - Report, Analysis
+- Tobias Washüttl (K11916576) - Setup, Behavioural PLanning
+- Daniel Buchberger (K0885317) - Path and Trajectory Planning
 
 _Note: We made use of AI assistance/LLMs for parts of the code to organize, clean up and help with documenting it for easier readability, as is standard practice nowadays. This does not in any way mean that code was plagiarized or copied, unless explicitly stated. All work was done in best conscience by the contributors named above._
 
@@ -31,18 +31,48 @@ After having installed the necessary tooling, you can try to start CARLA using t
 
 Now to interact with the environment and run tests, there are approaches provided by the project template, either using a conda environment, or by running everything inside a devcontainer. Since most of us experienced issues with the conda approach, we recommend the devcontainer setup, since that worked best for us. For that you need to run VSCode, have the Devcontainer and Remote SSH extensions installed and open the `task4` folder. VSCode usually detects the devcontainer setup automatically and prompts you to reopen the folder inside a devcontainer, but if not, you can press the blue button on the bottom left, or open the command prompt and select `Reopen in Container` using the provided devcontainer config. VSCode should now spin up a new container environment for you that has all the necessary tooling and libraries installed and running. All that is left to do, is run the `SimulatorAPI.py` file using `python` to see the working result.
 
-## Behavioural Planning
+## Behavioral Planning
 
-The behavioural planning component uses a Finite State Machine (FSM) to manage the vehicle's high-level actions based on the environment, specifically handling static obstacles and intersections requiring a stop.
+### What are Finite State Machines (FSM)?
 
-*   **States:** The FSM includes states like `LANE_FOLLOWING`, `DECELERATE_TO_STOP`, and `STOP`.
-*   **Transitions:** Logic is implemented to transition between these states based on conditions such as proximity to a stop line or obstacle, and elapsed time at a stop. The required transitions are:
-    *   `LANE_FOLLOWING` -> `DECELERATE_TO_STOP` (triggered when approaching a required stop)
-    *   `DECELERATE_TO_STOP` -> `STOP` (triggered upon reaching the stopping point)
-    *   `STOP` -> `LANE_FOLLOWING` (triggered after the required stop duration)
-*   **Goal Management:** Goal points (location and speed) are defined differently for each state (e.g., nominal speed in `LANE_FOLLOWING`, zero speed at the stop line in `DECELERATE_TO_STOP` and `STOP`). Lookahead distances are used to anticipate required actions.
+A Finite State Machine (FSM) is a computational model used to represent and control execution flow. It consists of a finite number of states, transitions between those states, and actions. In the context of autonomous vehicles, FSMs are used to model the decision-making process for different driving scenarios.
 
-*(A graph visualizing the FSM states and transitions would be beneficial here).*
+### States of our Behavioral Planning FSM
+
+Our FSM consists of three main states:
+
+1. **LANE FOLLOWING**: The default state where the vehicle follows the lane at nominal speed.
+2. **DECELERATION STOP**: An intermediate state where the vehicle is decelerating to come to a complete stop.
+3. **STOP**: The vehicle is completely stopped for a required duration (5 seconds) before proceeding.
+
+### Transitions Between States
+
+The transitions between states are governed by specific conditions:
+
+1. **LANE FOLLOWING → DECELERATION STOP**: Triggered when an object or intersection requiring a stop is detected within the lookahead distance.
+2. **DECELERATION STOP → STOP**: Occurs when the vehicle has decelerated and reached the stopping point.
+3. **STOP → LANE FOLLOWING**: Happens after the vehicle has remained stopped for the required 5 seconds.
+
+### FSM Diagram
+
+```
+    ┌─────────────────┐          ┌───────────────────┐         ┌─────────────┐
+    │                 │  Object  │                   │ Reached │             │
+    │ LANE FOLLOWING  ├─────────►│ DECELERATION STOP ├────────►│    STOP     │
+    │                 │ Detected │                   │  Stop   │             │
+    └─────────┬───────┘          └───────────────────┘         └──────┬──────┘
+              ▲                                                       │
+              │                                                       │
+              └───────────────────────────────────────────────────────┘
+                            After 5-second wait complete
+```
+
+### Implementation Details
+
+- **Lookahead Distance**: We set an appropriate lookahead distance to detect objects and intersections ahead of time.
+- **Goal Setting**: For deceleration, we set a goal slightly behind the stopping point to ensure proper stopping behavior.
+- **Speed Control**: We implemented different speed targets for each state (nominal for LANE FOLLOWING, zero for STOP).
+- **State Transitions**: We use distance-based conditions rather than speed-based conditions for more reliable transitions.
 
 ## Path and Trajectory generation using Cubic Spirals
 
@@ -64,15 +94,136 @@ Lastly, to calculate the trajectories, we use a cost function to evaluate them a
 
 ## Velocity Profile generation
 
-A velocity profile dictates the target speed along the chosen path.
+### 1. **Brief Explanation of Velocity Profile Generation**
 
-*   **State-Dependent Profiles:** The profile generation logic adapts to the current FSM state.
-    *   **`LANE_FOLLOWING`:** A nominal trajectory is calculated to adjust the vehicle's speed towards a target cruising speed.
-    *   **`DECELERATE_TO_STOP`:** A deceleration trajectory is generated to bring the vehicle to a smooth stop at the designated stop line. The required deceleration is calculated based on the distance to the stop line.
-    *   **`STOP`:** Velocity remains zero.
-*   **Calculations:** The process involves calculating the necessary distances and target speeds at various points along the path to create smooth acceleration or deceleration profiles suitable for the current driving context (stop sign handling takes precedence over nominal lane following).
+The **Velocity Profile Generator** computes a sequence of velocities (a velocity profile) for a vehicle along a given path (the "spiral") to execute various driving maneuvers safely and comfortably.  
+The goal is to transition from the current speed to a target speed—either by accelerating, decelerating, or coming to a stop—depending on the driving scenario.
+
+Depending on the maneuver, different profiles are generated:
+- **Nominal/Lane Follow:** The vehicle accelerates or decelerates to a desired speed.
+- **Decelerate to Stop:** The vehicle smoothly decelerates to a stop.
+- **Follow Vehicle:** (Not yet implemented) The vehicle matches the speed of a lead vehicle.
+
+### 2. **How Are the Profiles Calculated?**
+
+a) **General Workflow**
+
+1. **Maneuver Detection:** The generator selects the appropriate profile function based on the current driving state (e.g., stopping, following, lane keeping).
+2. **Velocity Calculation:**  
+   For each point along the trajectory, the target velocity is computed, based on the start speed, target speed, maximum allowed acceleration/deceleration, and the distance traveled.
+3. **Time Calculation:** For each point, the relative time is also determined, resulting in a time-based trajectory.
+
+
+b) **Key Calculation Formulas**
+
+- **Distance with Constant Acceleration:**  
+  \[ d = \frac{v_f^2 - v_i^2}{2a} \]  
+  (Distance \(d\) to go from initial velocity \(v_i\) to final velocity \(v_f\) at constant acceleration \(a\))
+
+- **Final Speed after a Distance:**  
+  \[ v_f = \sqrt{v_i^2 + 2ad} \]  
+  (Final speed \(v_f\) after distance \(d\) from initial speed \(v_i\) at acceleration \(a\))
+
+
+### 3. **How Are Distances or Velocities Calculated for Each Point?**
+
+**a) Distance Calculation Between Points**
+
+- The distance between two consecutive points on the trajectory is computed using the helper function `path_point_distance()`.
+- For many calculations (such as when to start braking), the cumulative distance along the trajectory is summed.
+
+**b) Velocity Calculation for Each Point**
+
+- **Acceleration/Deceleration Phase:**  
+  For each segment, the new velocity is calculated using the above formula (\(v_f\)), based on the distance to the next point and the current velocity.
+- **Constant Speed Phase:**  
+  Once the target speed is reached, the velocity remains constant for the rest of the trajectory (unless further deceleration is needed).
+
+**c) Time Calculation**
+
+- The time between two points is calculated as:  
+  \[ \Delta t = \frac{|v_{i+1} - v_i|}{a_\text{max}} \]  
+  (during acceleration/deceleration)  
+  or  
+  \[ \Delta t = \frac{\text{distance}}{v} \]  
+  (during constant speed)
+
+
+### 4. **Typical Workflow for Each Maneuver**
+
+**a) Decelerate to Stop**
+- Calculate how much distance is needed to first decelerate to a "slow speed," then to a full stop.
+- If the required braking distance exceeds the remaining path, the deceleration is adjusted so that the vehicle stops exactly at the end of the path.
+- Otherwise, the profile consists of three phases: deceleration to slow speed, constant slow speed, and final braking to zero.
+
+**b) Nominal Trajectory (Lane Follow)**
+- Calculate the distance required to transition from the current speed to the target speed.
+- Up to this point, the vehicle accelerates or decelerates; after that, it maintains the target speed.
+
+
+### 5. **Example Workflow (Pseudocode)**
+
+For each maneuver:
+1. Determine start and target speed.
+2. Calculate required distance for acceleration/deceleration phase.
+3. Iterate over the trajectory, for each point:
+    - Calculate distance to the next point.
+    - Compute new velocity using the kinematic formula.
+    - Compute time to the next point.
+    - Add all values as a TrajectoryPoint to the trajectory.
+
+
+### 6. **Key Methods in the Code**
+
+- **`calc_distance(v_i, v_f, a)`**: Calculates the distance needed to go from \(v_i\) to \(v_f\) at acceleration \(a\).
+- **`calc_final_speed(v_i, a, d)`**: Calculates the final speed after distance \(d\) from \(v_i\) at acceleration \(a\).
+- **`decelerate_trajectory()`**: Generates a profile for smooth stopping.
+- **`nominal_trajectory()`**: Generates a profile for reaching a target speed.
+- **`generate_trajectory()`**: Selects the appropriate profile function based on the maneuver.
+
+
+### 7. **Summary**
+
+The Velocity Profile Generator creates a physically plausible velocity profile for each driving maneuver by applying basic kinematic equations and respecting comfort/safety constraints (e.g., max acceleration).  
+The calculation is performed point-by-point along the planned route, providing for each point both the velocity and the corresponding time.
+
 
 ## Analysis
 
-*(This section should contain a detailed analysis of the results observed during simulation runs. Discuss the effectiveness of the FSM logic, the path generation and selection process, the smoothness of the velocity profiles, collision avoidance performance, junction handling, and overall system behavior. Include observations on successes, failures, or areas for potential improvement based on the simulation outcomes.)*
+### System Integration and Performance
 
+Our integrated planning system successfully handles various driving scenarios, including lane following, stopping at intersections, and navigating around obstacles. The three-layer approach (behavioral planning, path generation, and velocity profiling) provides a robust and flexible framework for autonomous navigation.
+
+### Strengths of the Implementation
+
+1. **Robust State Machine**: The FSM design clearly separates different driving behaviors, making the system more maintainable and easier to debug. The state transitions are well-defined and based on reliable distance metrics rather than potentially noisy speed measurements.
+
+2. **Adaptable Path Planning**: The cubic spiral approach generates smooth paths that respect vehicle kinematic constraints. Multiple candidate paths with different lateral offsets provide flexibility in obstacle avoidance while maintaining comfort.
+
+3. **Safety-First Design**: Comprehensive collision checking ensures that only safe paths are selected. The weighted cost function balances multiple objectives, prioritizing safety while considering efficiency and comfort.
+
+4. **Smooth Velocity Profiles**: The two-phase velocity profile generation creates comfortable acceleration and deceleration patterns. State-specific velocity calculations ensure appropriate speed control in different scenarios.
+
+### Challenges and Limitations
+
+1. **Computational Complexity**: Generating and evaluating multiple spiral paths can be computationally intensive, potentially limiting real-time performance on less powerful hardware.
+
+2. **Parameter Tuning**: The system requires careful tuning of parameters like lookahead distance, maximum lateral offsets, and cost weights. Finding the optimal balance between different objectives requires extensive testing.
+
+3. **Edge Cases**: While the system handles common scenarios well, unusual edge cases (like extremely sharp turns or complex intersection geometries) might require additional handling.
+
+4. **Reactivity vs. Planning Horizon**: There's an inherent trade-off between quick reaction to changing conditions and maintaining a stable plan over a longer horizon.
+
+### Future Improvements
+
+1. **Dynamic Parameter Adjustment**: Implementing adaptive parameter tuning based on driving context could improve performance across different environments.
+
+2. **Prediction Integration**: Incorporating better prediction of other road users' behaviors would enhance planning in dynamic environments.
+
+3. **Machine Learning Optimization**: Using learning-based approaches could help optimize cost functions and parameter selection based on real-world performance data.
+
+4. **Extended State Machine**: Adding more specialized states for complex maneuvers like lane changes, overtaking, or unprotected turns would increase the system's capabilities.
+
+### Conclusion
+
+Our implementation successfully addresses the core requirements of behavioral planning, path generation, and velocity control for autonomous navigation. The modular design allows for incremental improvements and extensions as needed. Through careful integration of these components, we've created a planning system that balances safety, comfort, and efficiency in a wide range of driving scenarios.
