@@ -1,0 +1,7 @@
+numpy
+pygame
+scipy
+matplotlib
+pytest
+ipywidgets
+pandas
