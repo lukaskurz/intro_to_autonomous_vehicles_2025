@@ -876,11 +876,11 @@ def game_loop(args):
         
         # TODO Create throttle PID constants.
         # moderate proportional gain for responsive acceleration
-        throttle_kp = 0.3
+        throttle_kp = 0.25
         # small integral gain to eliminate steady-state error
-        throttle_ki = 0.02
+        throttle_ki = 0.05
         # small derivative gain to prevent overshooting
-        throttle_kd = 0.1
+        throttle_kd = 0.05
         # output limits for throttle controller
         throttle_output_min = -1.0  # Für Bremsen
         throttle_output_max = 1.0   # Für Beschleunigung
