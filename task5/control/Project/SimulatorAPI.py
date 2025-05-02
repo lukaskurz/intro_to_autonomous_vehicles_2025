@@ -875,14 +875,33 @@ def game_loop(args):
         ###############################
         
         # TODO Create throttle PID constants.
+        # moderate proportional gain for responsive acceleration
+        throttle_kp = 0.3
+        # small integral gain to eliminate steady-state error
+        throttle_ki = 0.02
+        # small derivative gain to prevent overshooting
+        throttle_kd = 0.1
+        # output limits for throttle controller
+        throttle_output_min = -1.0  # Für Bremsen
+        throttle_output_max = 1.0   # Für Beschleunigung
 
         # TODO Initialize controller class
-        throttle_controller = None
+        throttle_controller = PIDController(throttle_kp, throttle_ki, throttle_kd, throttle_output_min, throttle_output_max)
+
         
         # TODO Create steering PID constants.
+        # moderate proportional gain for responsive steering
+        steer_kp = 0.7
+        # small integral gain to correct persistent steering bias
+        steer_ki = 0.01
+        # moderate derivative gain to reduce oscillation
+        steer_kd = 0.2
+        # output limits for steering controller
+        steer_output_min = -1.2  # Maximale Lenkung nach links
+        steer_output_max = 1.2   # Maximale Lenkung nach rechts
 
         # TODO Initialize controller class.
-        steer_controller = None
+        steer_controller = PIDController(steer_kp, steer_ki, steer_kd, steer_output_min, steer_output_max)
         
         i_data = None
         s_data = None
@@ -1049,12 +1068,34 @@ def get_control(steer_controller : PIDController, throttle_controller : PIDContr
     # you can access the desired trajectory wih xt_points and yt_points. 
     # you can also use the function angle_between_points(x1,y1,x2,y2) to 
     # calculate the angle between two points.
-    desired_heading = 0
-    steer_error = 0
+    if len(xt_points) > 1 and len(yt_points) > 1:
+        # calculate the desired heading to the next point in the trajectory
+        # using the angle_between_points function to get the angle between current position
+        # and the next point in the planned trajectory
+        desired_heading = angle_between_points(x_position, y_position, xt_points[1], yt_points[1])
+        
+        # the steering error is the difference between desired heading and current yaw
+        # this tells us how much we need to turn to follow the planned path
+        steer_error = desired_heading - yaw
+        
+        # normalize the error to the range [-pi, pi] to handle angle wrapping
+        # this ensures we always take the shortest turning direction
+        while steer_error > math.pi:
+            steer_error -= 2 * math.pi
+        while steer_error < -math.pi:
+            steer_error += 2 * math.pi
+    else:
+        # if we don't have enough points, maintain current heading
+        desired_heading = yaw
+        steer_error = 0
 
     # TODO obtain the steer command from the controller. Use the get_control_command() method
     # from the appropiate controller.
-    steer_command = 0
+    if dt <= 0:
+        dt = 0.01
+    steer_command = steer_controller.get_control_command(steer_error, dt)
+    # limit the steering command to the range [-1, 1]
+    steer_command = max(-1.2, min(1.2, steer_command))
 
     #####################################
     ###### Throttle Control #############
@@ -1062,12 +1103,21 @@ def get_control(steer_controller : PIDController, throttle_controller : PIDContr
     
     # TODO calculate the throttle error from the position and the desired speed.
     # you can get the desired speed from the vt_points array.
-    desired_v = 0
-    throttle_error  = 0
+    if len(vt_points) > 0:
+        desired_v = vt_points[0]
+        throttle_error = desired_v - velocity
+    else:
+        desired_v = 0
+        throttle_error = -velocity
+    
 
     # TODO obtain the throtle command from the controller. Use the get_control_command() method
     # from the appropiate controller.
-    throttle = 0
+    if dt <= 0:
+        dt = 0.01
+    throttle = throttle_controller.get_control_command(throttle_error, dt)
+    # limit the throttle command to the range [-1, 1]
+    throttle = max(-1.0, min(1.0, throttle))
 
     if throttle > 0.0:
         throttle_command = throttle
